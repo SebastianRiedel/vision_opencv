@@ -79,6 +79,7 @@ public:
   std_msgs::Header header; //!< ROS header
   std::string encoding;    //!< Image encoding ("mono8", "bgr8", etc.)
   cv::Mat image;           //!< Image data for use with OpenCV
+  std::string guid;
 
   /**
    * \brief Empty constructor.
@@ -90,7 +91,7 @@ public:
    */
   CvImage(const std_msgs::Header& header, const std::string& encoding,
           const cv::Mat& image = cv::Mat())
-    : header(header), encoding(encoding), image(image)
+    : header(header), encoding(encoding), image(image), guid("")
   {
   }
   
@@ -329,8 +330,8 @@ template<> struct MD5Sum<cv_bridge::CvImage>
   static const uint64_t static_value2 = MD5Sum<sensor_msgs::Image>::static_value2;
   
   // If the definition of sensor_msgs/Image changes, we'll get a compile error here.
-  ROS_STATIC_ASSERT(MD5Sum<sensor_msgs::Image>::static_value1 == 0x060021388200f6f0ULL);
-  ROS_STATIC_ASSERT(MD5Sum<sensor_msgs::Image>::static_value2 == 0xf447d0fcd9c64743ULL);
+  ROS_STATIC_ASSERT(MD5Sum<sensor_msgs::Image>::static_value1 == 0x611ce51644d218e8ULL);
+  ROS_STATIC_ASSERT(MD5Sum<sensor_msgs::Image>::static_value2 == 0xbdec777d00dfab26ULL);
 };
 
 template<> struct DataType<cv_bridge::CvImage>
@@ -369,6 +370,7 @@ template<> struct Serializer<cv_bridge::CvImage>
     stream.next((uint32_t)data_size);
     if (data_size > 0)
       memcpy(stream.advance(data_size), m.image.data, data_size);
+    stream.next(m.guid);
   }
 
   template<typename Stream>
@@ -388,12 +390,13 @@ template<> struct Serializer<cv_bridge::CvImage>
     // Construct matrix pointing to the stream data, then copy it to m.image
     cv::Mat tmp((int)height, (int)width, type, stream.advance(data_size), (size_t)step);
     tmp.copyTo(m.image);
+    stream.next(m.guid);
   }
 
   inline static uint32_t serializedLength(const cv_bridge::CvImage& m)
   {
     size_t data_size = m.image.step*m.image.rows;
-    return serializationLength(m.header) + serializationLength(m.encoding) + 17 + data_size;
+    return serializationLength(m.header) + serializationLength(m.encoding) + 17 + data_size + serializationLength(m.guid);
   }
 };
 
